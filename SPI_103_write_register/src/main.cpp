@@ -41,7 +41,7 @@ void spi1_setup(void){
 					SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE, 	// Полярность: низкий уровень в idle
                     SPI_CR1_CPHA_CLK_TRANSITION_1,   	// Фаза: данные захватываются по левому фронту
 				    SPI_CR1_DFF_8BIT,					// 8-битный формат данных
-					SPI_CR1_MSBFIRST);					// тарший бит первый
+					SPI_CR1_MSBFIRST);					// Старший бит первый
 
 	 // Дополнительные настройки
     spi_set_full_duplex_mode(SPI1);                  // Полнодуплексный режим
