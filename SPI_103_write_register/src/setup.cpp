@@ -1,80 +1,54 @@
-#include "setup.hpp"
+#include "../inc/setup.hpp"
 
 
+void pinWrite(uint32_t port,uint16_t pin, uint8_t val){
+	if (val == 0) {
+        gpio_clear(port,pin);  // Установить бит в 0 (побитовое И с инверсией)
+    } else {
+         gpio_set(port,pin);   // Установить бит в 1 (побитовое ИЛИ)
+    }
+}
 
 
-
- void clock_setup(void){
-	rcc_clock_setup_pll(&rcc_hse_configs[RCC_CLOCK_HSE8_72MHZ]);
-	rcc_periph_clock_enable(RCC_GPIOA);
+void clock_setup(void){
+	// rcc_clock_setup_pll(&rcc_hse_configs[RCC_CLOCK_HSE12_72MHZ]);
 	rcc_periph_clock_enable(RCC_GPIOB);
-	// rcc_periph_clock_enable(RCC_AFIO);
-	rcc_periph_clock_enable(RCC_USART2);
-	rcc_periph_clock_enable(RCC_USART1);
+	rcc_periph_clock_enable(RCC_GPIOA);
 
+	rcc_periph_clock_enable(RCC_SPI1);
 }
 
- void gpio_setup(void){
-	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_2_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, M0); //для M0
-	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_2_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, M1); //для M1
-	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_2_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, GPIO2); //для светодиода	
-
-	//дисплей
-	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, lcd_rs);
-	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, GPIO2);
-	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, lcd_en);
-	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_2_MHZ	,GPIO_CNF_OUTPUT_PUSHPULL, lcd_d4);
-	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, lcd_d5);
-	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, lcd_d6);
-	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, lcd_d7);
+void gpio_setup(void) {
+	//светодиод для отладки
+	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO2);
+	
+	//для SPI 
+     gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_ALTFN_PUSHPULL,	
+            																		GPIO5 | //CLK
+                                            										GPIO7 );//MOSI
+    gpio_set_mode(GPIOA, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT,GPIO6);		//MISO																			
 }
 
- void uart2_setup(void){
-	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART2_TX);
-	gpio_set_mode(GPIOA, GPIO_MODE_INPUT,GPIO_CNF_INPUT_FLOAT, GPIO_USART2_RX);
+void spi1_setup(void){
+	spi_disable(SPI1);
 
-	/* Setup UART parameters. */
-	usart_set_baudrate(USART2, BAUD_RATE);
-	usart_set_databits(USART2, 8);
-	usart_set_stopbits(USART2, USART_STOPBITS_1);
-	usart_set_mode(USART2, USART_MODE_TX_RX);
-	usart_set_parity(USART2, USART_PARITY_NONE);
-	usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
+	 spi_init_master(SPI1, 
+					SPI_CR1_BAUDRATE_FPCLK_DIV_64,   	// Предделитель: делит частоту мк 
+					SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE, 	// Полярность: низкий уровень в idle
+                    SPI_CR1_CPHA_CLK_TRANSITION_1,   	// Фаза: данные захватываются по левому фронту
+				    SPI_CR1_DFF_8BIT,					// 8-битный формат данных
+					SPI_CR1_MSBFIRST);					// Старший бит первый
 
-	//активируем перрывания по приёму данных в UART2
-  	USART_CR1(USART2) |= USART_CR1_RXNEIE; 
-	nvic_enable_irq(NVIC_USART2_IRQ);
-
-	usart_enable(USART2);
-}
-
- void uart1_setup(void){
-
-/* Setup GPIO pin GPIO_USART1_TX. */
-gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART1_TX);
-gpio_set_mode(GPIOA, GPIO_MODE_INPUT,GPIO_CNF_INPUT_FLOAT, GPIO_USART1_RX);
-/* Setup UART parameters. */
-usart_set_baudrate(USART1, BAUD_RATE);
-usart_set_databits(USART1, 8);
-usart_set_stopbits(USART1, USART_STOPBITS_1);
-usart_set_mode(USART1, USART_MODE_TX_RX);
-usart_set_parity(USART1, USART_PARITY_NONE);
-usart_set_flow_control(USART1, USART_FLOWCONTROL_NONE);
-
-//активируем перрывания по приёму данных в UART1
-  	USART_CR1(USART1) |= USART_CR1_RXNEIE; 
-	nvic_enable_irq(NVIC_USART1_IRQ);
-
-usart_enable(USART1);
-
-}
-
-void systick_setup(void){
-systick_set_frequency(1000,72'000'000);
-systick_counter_enable();
-systick_interrupt_enable();
-
+	 // Дополнительные настройки
+    spi_set_full_duplex_mode(SPI1);                  // Полнодуплексный режим
+    spi_enable_software_slave_management(SPI1);      // Программное управление NSS
+    spi_set_nss_high(SPI1);                          // NSS всегда высокий		
+	
+	spi_enable(SPI1);
 }
 
 
-  
+
+
+
+ 

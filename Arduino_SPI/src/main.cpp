@@ -1,6 +1,7 @@
+#include "../include/NRF.hpp"
+#include <SPI.h>    
 
-#include "../include/NRF.h"
-
+RF24 radio(9, 6); // "создать" модуль на пинах 9 и 6 
 
 
 
@@ -8,21 +9,13 @@
 void setup() {
   // запустить шину
   SPI.begin();
+  radio.begin();      
 
-  // пин CS как выход
-  pinMode(spi_ss, OUTPUT);
-
-  // деактивировать
-  digitalWrite(spi_ss, HIGH);
-
-  delay(100);
-
-  // отправить данные
-  sendByte('A');
+  
 }
 
 void loop() {
-  RF24_write_register(SETUP_RETR,(0b0100 << ARD) | (0b1111 << ARC));
+  radio.write_register(SETUP_RETR,(0b0100 << ARD) | (0b1111 << ARC));
   delay(1000);
 }
 

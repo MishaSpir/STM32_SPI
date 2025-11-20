@@ -1,4 +1,10 @@
 # передача данных по SPI
+## pinout
+![alt text](image-1.png)
+
+
+
+
 ![alt text](image.png)
 **результат работы функции:** 
 `RF24_write_register(SETUP_RETR,(0b0100 << ARD) | (0b1111 << ARC));`

@@ -14,7 +14,8 @@ include(libopencm3)
 add_executable(${PROJECT_NAME}
      src/main.cpp
      # src/Pars.cpp
-     # src/setup.cpp
+     src/setup.cpp
+     src/NRF.cpp
      # src/LiquidCrystalSTM.cpp
 )
 
