@@ -26,14 +26,20 @@ int main() {
 	
 	RF24 radio(CE_PIN,CE_PORT,NSS_PIN,NSS_PORT);
 	radio.begin();
+	for(volatile uint32_t i =0; i < 2'000'000; i +=2);
+	reg_value = radio.read_register(RF_SETUP);
+	for(volatile uint32_t i =0; i < 1'000'00; i +=2);
+	radio.setPALevel( RF24_PA_HIGH );
+	for(volatile uint32_t i =0; i < 1'000'00; i +=2);
+	reg_value = radio.read_register(RF_SETUP);
 
 	while (true) {
 		gpio_toggle(GPIOB,GPIO2);
 		// gpio_toggle(GPIOA,spi1_nss);
 		for(volatile uint32_t i =0; i < 1'000'000; i +=2);
-		radio.write_register(SETUP_RETR,(0b0100 << ARD) | (0b1111 << ARC));
-		for(volatile uint32_t i =0; i < 1'000'00; i +=2);
-		reg_value = radio.read_register(SETUP_RETR);
+		// radio.write_register(SETUP_RETR,(0b0100 << ARD) | (0b1111 << ARC));
+		// for(volatile uint32_t i =0; i < 1'000'00; i +=2);
+		// reg_value = radio.read_register(SETUP_RETR);
 
 		
 	}

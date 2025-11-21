@@ -4,7 +4,7 @@ set(CMAKE_TOOLCHAIN_FILE cmake/arm-none-eabi-gcc.cmake)
 
 
 #================================================================================
-project(SPI_103_send LANGUAGES CXX C ASM)
+project(SPI_103_nrf24_testing LANGUAGES CXX C ASM)
 set(DEVICE stm32f103c8)
 
 include(libopencm3)

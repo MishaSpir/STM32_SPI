@@ -12,6 +12,7 @@
 ## read_register
 
 **- на Arduino:**
+
 ![alt text](arduino_out_read_register.png)
 
 **- на STM32_103:**
@@ -19,3 +20,16 @@
 ![alt text](stm103_out_read_register.png)
 
 Видно, что второе значение по MOSI из Arduino и из STM103 не совпадают, но это неважно, так как оно послылается, чтобы считать значение из регистра радиомодуля. А оно, как можно видеть для Arduino и для STM103 одинаковое (0x4F).
+
+
+## setPALevel
+
+**- на Arduino:**
+
+![alt text](Arduino_SPI/powerHigh.png)
+
+**- на STM32_103:**
+
+![alt text](powerHighstm.png)
+
+функция записывает мощность в регистр. Подробнее читай в README в папке ARDUINO_SPI

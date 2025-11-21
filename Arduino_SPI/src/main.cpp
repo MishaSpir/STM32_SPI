@@ -12,18 +12,24 @@ void setup() {
   SPI.begin();
   radio.begin();    
   delay(2000);  
-  radio.write_register(SETUP_RETR,(0b0100 << ARD) | (0b1111 << ARC));
+  reg_value = radio.read_register(RF_SETUP);
   delay(100);  
- reg_value = radio.read_register(SETUP_RETR);
+  radio.setPALevel( RF24_PA_HIGH );
+  delay(100);  
+  reg_value = radio.read_register(RF_SETUP);
+
+//  reg_value = radio.read_register(SETUP_RETR);
   
 }
 
 void loop() {
 
 
-  radio.write_register(SETUP_RETR,(0b0100 << ARD) | (0b1111 << ARC));
-  delay(100);  
-  reg_value = radio.read_register(SETUP_RETR);
+  // radio.write_register(SETUP_RETR,(0b0100 << ARD) | (0b1111 << ARC));
+ 
+  // delay(100);  
+  // // reg_value = radio.read_register(SETUP_RETR);
+  // reg_value = radio.read_register(RF_SETUP);
   Serial.println(reg_value,HEX);
   delay(1000);
 

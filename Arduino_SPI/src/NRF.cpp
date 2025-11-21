@@ -32,6 +32,13 @@ void RF24::begin(void)
   // Initialize pins
   pinMode(ce_pin,OUTPUT);
   pinMode(csn_pin,OUTPUT);
+
+   // Initialize SPI bus
+  SPI.begin();
+
+  ce(LOW);
+  csn(HIGH);
+
 }
 
 uint8_t RF24::write_register(uint8_t reg, uint8_t value)
@@ -61,4 +68,36 @@ uint8_t RF24::read_register(uint8_t reg)
   csn(HIGH);
   return result;
 }
+
+void RF24::setPALevel(rf24_pa_dbm_e level)
+{
+  uint8_t setup = read_register(RF_SETUP) ;         // читат текущее состояние регистра RF_SETUP
+  setup &= ~(_BV(RF_PWR_LOW) | _BV(RF_PWR_HIGH)) ;  // очищает биты мощности
+
+  // switch uses RAM (evil!)                        // пишет новую мощность
+  if ( level == RF24_PA_MAX )
+  {
+    setup |= (_BV(RF_PWR_LOW) | _BV(RF_PWR_HIGH)) ;
+  }
+  else if ( level == RF24_PA_HIGH )
+  {
+    setup |= _BV(RF_PWR_HIGH) ;
+  }
+  else if ( level == RF24_PA_LOW )
+  {
+    setup |= _BV(RF_PWR_LOW);
+  }
+  else if ( level == RF24_PA_MIN )
+  {
+    // nothing
+  }
+  else if ( level == RF24_PA_ERROR )
+  {
+    // On error, go to maximum PA
+    setup |= (_BV(RF_PWR_LOW) | _BV(RF_PWR_HIGH)) ;
+  }
+
+  write_register( RF_SETUP, setup ) ;
+}
+
 
