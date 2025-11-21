@@ -26,7 +26,7 @@
 
 **- на Arduino:**
 
-![alt text](pictures/Arduino_SPI/powerHigh.png)
+![alt text](Arduino_SPI/powerHigh.png)
 
 **- на STM32_103:**
 
