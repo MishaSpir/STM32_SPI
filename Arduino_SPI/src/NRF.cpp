@@ -50,3 +50,15 @@ uint8_t RF24::write_register(uint8_t reg, uint8_t value)
   return status;
 }
 
+
+uint8_t RF24::read_register(uint8_t reg)
+{
+  csn(LOW);
+  SPI.beginTransaction(SPISettings(50000, MSBFIRST, SPI_MODE0)); // начать
+  SPI.transfer( R_REGISTER | ( REGISTER_MASK & reg ) );
+  uint8_t result = SPI.transfer(0xff);
+  SPI.endTransaction();    
+  csn(HIGH);
+  return result;
+}
+

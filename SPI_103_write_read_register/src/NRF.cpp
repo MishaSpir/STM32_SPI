@@ -57,9 +57,11 @@ uint16_t RF24::read_register(uint8_t reg) //функция в разработк
 
     // отправляем любой бит для получения данных из указанного регистра 
     spi_send(SPI1, 0x00);
-	while (!(SPI_SR(SPI1) & SPI_SR_RXNE))
+	  while (!(SPI_SR(SPI1) & SPI_SR_RXNE));
 
     result = spi_read(SPI1);
+    	// ждем, пока освободится шина
+	  while (SPI_SR(SPI1) & SPI_SR_BSY);
     csn(1);
 
     return result;

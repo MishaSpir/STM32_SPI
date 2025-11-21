@@ -16,7 +16,7 @@
 #define NSS_PIN  GPIO4 //это ss для SPI
 #define NSS_PORT GPIOA 
 
-
+uint16_t reg_value;
 
 
 int main() {
@@ -31,9 +31,10 @@ int main() {
 		gpio_toggle(GPIOB,GPIO2);
 		// gpio_toggle(GPIOA,spi1_nss);
 		for(volatile uint32_t i =0; i < 1'000'000; i +=2);
+		reg_value = radio.read_register(SETUP_RETR);
+		for(volatile uint32_t i =0; i < 1'000'00; i +=2);
 		radio.write_register(SETUP_RETR,(0b0100 << ARD) | (0b1111 << ARC));
-		
-		
+
 	}
 }
 
