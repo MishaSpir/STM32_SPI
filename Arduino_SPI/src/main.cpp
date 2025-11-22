@@ -3,7 +3,7 @@
 
 RF24 radio(9, 6); // "создать" модуль на пинах 9 и 6 
 
-
+  bool p_var = 0;
  uint8_t reg_value;
 
 void setup() {
@@ -12,11 +12,16 @@ void setup() {
   SPI.begin();
   radio.begin();    
   delay(2000);  
-  reg_value = radio.read_register(RF_SETUP);
+    // Flush buffers
+  // radio.flush_rx();
+  // radio.flush_tx();
   delay(100);  
-  radio.setPALevel( RF24_PA_HIGH );
+  // radio.setPALevel( RF24_PA_HIGH );
+  //  radio.setDataRate( RF24_2MBPS ) ;
+  // radio.setCRCLength( RF24_CRC_16 );
+  // radio.setChannel(76);
   delay(100);  
-  reg_value = radio.read_register(RF_SETUP);
+  // reg_value = radio.read_register(RF_CH);
 
 //  reg_value = radio.read_register(SETUP_RETR);
   
@@ -30,7 +35,8 @@ void loop() {
   // delay(100);  
   // // reg_value = radio.read_register(SETUP_RETR);
   // reg_value = radio.read_register(RF_SETUP);
-  Serial.println(reg_value,HEX);
+  // Serial.println(reg_value,HEX);
+  Serial.println(p_var);
   delay(1000);
 
 }

@@ -1,5 +1,9 @@
 # include "../inc/setup.hpp"
+#include "../inc/time_setup.hpp"
 #include "../inc/NRF.hpp"
+// # include <libopencm3/stm32/timer.h>
+// # include <libopencm3/cm3/nvic.h>
+
 
 
 // Это послание для меня в будущем - тебе надо настроить read_register на Arduino,
@@ -23,25 +27,39 @@ int main() {
 	clock_setup();
     gpio_setup();
 	spi1_setup();
+	timer2_setup();
+	timer3_setup();
+	
+
+	
 	
 	RF24 radio(CE_PIN,CE_PORT,NSS_PIN,NSS_PORT);
 	radio.begin();
-	for(volatile uint32_t i =0; i < 2'000'000; i +=2);
-	reg_value = radio.read_register(RF_SETUP);
-	for(volatile uint32_t i =0; i < 1'000'00; i +=2);
-	radio.setPALevel( RF24_PA_HIGH );
-	for(volatile uint32_t i =0; i < 1'000'00; i +=2);
-	reg_value = radio.read_register(RF_SETUP);
+	
+    //   radio.flush_rx();
+  	//   radio.flush_tx();
+	  delay_us(100);
+
+		// radio.setChannel(76);
+	
+	// reg_value = radio.read_register(RF_CH);
 
 	while (true) {
 		gpio_toggle(GPIOB,GPIO2);
+		    // radio.flush_rx();
+			// delay_ms(5);
+  	  		// radio.flush_tx();
+		// gpio_toggle(GPIOB,GPIO5);
+			// delay_ms(5);
 		// gpio_toggle(GPIOA,spi1_nss);
-		for(volatile uint32_t i =0; i < 1'000'000; i +=2);
-		// radio.write_register(SETUP_RETR,(0b0100 << ARD) | (0b1111 << ARC));
-		// for(volatile uint32_t i =0; i < 1'000'00; i +=2);
+		
+		//  radio.write_register(SETUP_RETR,(0b0100 << ARD) | (0b1111 << ARC));
+		
+		delay_ms(5);
 		// reg_value = radio.read_register(SETUP_RETR);
 
 		
 	}
 }
+
 

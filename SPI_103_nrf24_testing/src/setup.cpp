@@ -11,7 +11,7 @@ void pinWrite(uint32_t port,uint16_t pin, uint8_t val){
 
 
 void clock_setup(void){
-	// rcc_clock_setup_pll(&rcc_hse_configs[RCC_CLOCK_HSE12_72MHZ]);
+	rcc_clock_setup_pll(&rcc_hsi_configs[RCC_CLOCK_HSI_24MHZ]);
 	rcc_periph_clock_enable(RCC_GPIOB);
 	rcc_periph_clock_enable(RCC_GPIOA);
 
@@ -21,6 +21,10 @@ void clock_setup(void){
 void gpio_setup(void) {
 	//светодиод для отладки
 	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO2);
+
+	//для отладки таймеров - выключи потом
+	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO5);
+
 	
 	//для SPI 
      gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_ALTFN_PUSHPULL,	
@@ -33,7 +37,7 @@ void spi1_setup(void){
 	spi_disable(SPI1);
 
 	 spi_init_master(SPI1, 
-					SPI_CR1_BAUDRATE_FPCLK_DIV_64,   	// Предделитель: делит частоту мк 
+					SPI_CR1_BAUDRATE_FPCLK_DIV_256,   	// Предделитель: делит частоту мк 
 					SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE, 	// Полярность: низкий уровень в idle
                     SPI_CR1_CPHA_CLK_TRANSITION_1,   	// Фаза: данные захватываются по левому фронту
 				    SPI_CR1_DFF_8BIT,					// 8-битный формат данных

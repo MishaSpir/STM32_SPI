@@ -51,4 +51,10 @@ CE      D9
 ![alt text](powerLow.png)
 
 
+Пробуем записать скорость 1Mbps
+
+![alt text](pictures/image.png)
+
+
+
 
