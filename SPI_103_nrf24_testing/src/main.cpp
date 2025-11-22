@@ -35,6 +35,12 @@ int main() {
 	
 	RF24 radio(CE_PIN,CE_PORT,NSS_PIN,NSS_PORT);
 	radio.begin();
+	 delay_ms(1);
+  	radio.setAutoAck(1);       //0x21 0x3F
+  	 delay_ms(1);
+ 	radio.setRetries(0, 15);   //0x24 0x0F
+ 	 delay_ms(1);
+  	radio.enableAckPayload();  //0x1D_0x00  0x3D_0x06 0x1D_0x00 0x1C_0xFF 0x3C_0x03  
 	
     //   radio.flush_rx();
   	//   radio.flush_tx();
@@ -54,8 +60,9 @@ int main() {
 		// gpio_toggle(GPIOA,spi1_nss);
 		
 		//  radio.write_register(SETUP_RETR,(0b0100 << ARD) | (0b1111 << ARC));
+  		radio.write_register(DYNPD,radio.read_register(DYNPD) | _BV(DPL_P1) | _BV(DPL_P0));
 		
-		delay_ms(5);
+		delay_ms(1000);
 		// reg_value = radio.read_register(SETUP_RETR);
 
 		

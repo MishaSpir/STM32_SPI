@@ -43,6 +43,13 @@ public:
     void setChannel(uint8_t channel);
     void flush_rx(void);
     void flush_tx(void);
+      void setAutoAck(bool enable);
+    // void setAutoAck( uint8_t pipe, bool enable );
+    void setRetries(uint8_t delay, uint8_t count);
+    void enableAckPayload(void);
+    void toggle_features(void);
+    void setPayloadSize(uint8_t size);
+
 
 private:
   uint32_t ce_port;
@@ -51,6 +58,7 @@ private:
   uint16_t csn_pin; /**< SPI Chip select */
   bool wide_band; /* 2Mbs data rate in use? */
   bool p_variant; /* False for RF24L01 and true for RF24L01P */
+  uint8_t payload_size; /**< Fixed size of payloads */
 
 };
 

@@ -252,3 +252,72 @@ void RF24::flush_tx(void)
 }
 
 /****************************************************************************/
+
+void RF24::setAutoAck(bool enable)
+{
+  if ( enable )
+    write_register(EN_AA, 0b111111);
+  else
+    write_register(EN_AA, 0);
+}
+
+/****************************************************************************/
+
+
+void RF24::setRetries(uint8_t delay, uint8_t count)
+{
+ write_register(SETUP_RETR,(delay&0xf)<<ARD | (count&0xf)<<ARC);
+}
+
+/****************************************************************************/
+
+void RF24::toggle_features(void)
+{
+  csn(0);
+  spi_send(SPI1, ACTIVATE );
+  // ждем, пока отправятся данные	(пока бит TXE регистра SPI_SR не установлен)
+  while (!(SPI_SR(SPI1) & SPI_SR_TXE)){__asm__("nop");};
+
+  spi_send(SPI1,0x73);
+  while (!(SPI_SR(SPI1) & SPI_SR_TXE)){__asm__("nop");};
+
+  // ждем, пока освободится шина
+  while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
+  // delay_us(24);
+  csn(1);
+}
+
+/****************************************************************************/
+
+void RF24::enableAckPayload(void) 
+{
+  //
+  // enable ack payload and dynamic payload features
+  //
+
+  write_register(FEATURE,(uint8_t)read_register(FEATURE) | _BV(EN_ACK_PAY) | _BV(EN_DPL) );
+
+  // If it didn't work, the features are not enabled
+  if ( ! read_register(FEATURE) )
+  {
+    // So enable them and try again
+    toggle_features();
+    write_register(FEATURE,(uint8_t)read_register(FEATURE) | _BV(EN_ACK_PAY) | _BV(EN_DPL) );
+  }
+
+  // IF_SERIAL_DEBUG(printf("FEATURE=%i\r\n",read_register(FEATURE)));
+
+  //
+  // Enable dynamic payload on pipes 0 & 1
+  //
+
+  write_register(DYNPD,(uint8_t)read_register(DYNPD) | _BV(DPL_P1) | _BV(DPL_P0));
+}
+
+/****************************************************************************/
+
+void RF24::setPayloadSize(uint8_t size)
+{
+  const uint8_t max_payload_size = 32;
+  payload_size = std::min(size,max_payload_size);
+}

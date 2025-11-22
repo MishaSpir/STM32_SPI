@@ -50,6 +50,7 @@ public:
   void setPayloadSize(uint8_t size);
   void powerUp(void);
   void stopListening(void);
+  void startListening(void);
   uint8_t write_payload(const void* buf, uint8_t len);
   void startWrite( const void* buf, uint8_t len );
   bool write( const void* buf, uint8_t len );
@@ -57,6 +58,12 @@ public:
   uint8_t getDynamicPayloadSize(void);
   void powerDown(void);
   void openWritingPipe(uint64_t value);
+  bool read( void* buf, uint8_t len );
+  uint8_t RF24::read_payload(void* buf, uint8_t len);
+  bool available(void);
+  bool available(uint8_t* pipe_num);
+  uint8_t get_status(void);
+
 
 
 
@@ -71,6 +78,7 @@ private:
   bool dynamic_payloads_enabled; /**< Whether dynamic payloads are enabled. */ 
   bool ack_payload_available; /**< Whether there is an ack payload waiting */
   uint8_t ack_payload_length; /**< Dynamic size of pending ack payload. */
+  uint64_t pipe0_reading_address; /**< Last address set on pipe 0 for reading. */
 };
 
 #endif

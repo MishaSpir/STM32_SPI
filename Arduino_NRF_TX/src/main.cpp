@@ -26,7 +26,7 @@ void setup() {
   radio.setPayloadSize(32);   // размер пакета, в байтах
 
   radio.openWritingPipe(address[0]);  // мы - труба 0, открываем канал для передачи данных
-  radio.setChannel(0x00);             // выбираем канал (в котором нет шумов!)
+  radio.setChannel(0x60);             // выбираем канал (в котором нет шумов!)
 
   delay(1);
   radio.setPALevel (RF24_PA_MAX);   // уровень мощности передатчика. На выбор RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
