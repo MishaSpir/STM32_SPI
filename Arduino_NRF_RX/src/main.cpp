@@ -15,6 +15,7 @@ void setup() {
   Serial.begin(9600);
 
   SPI.begin();
+
   radio.begin();  
   delay(1);
   radio.setAutoAck(1);       //0x21 0x3F
@@ -24,20 +25,30 @@ void setup() {
   radio.enableAckPayload();  //0x1D_0xFF  0x3D_0x06 0x1D_0xFF 0x1C_0xFF 0x3C_0x03  
   delay(1);
   radio.setPayloadSize(32);   // размер пакета, в байтах
-
-  radio.openWritingPipe(address[0]);  // мы - труба 0, открываем канал для передачи данных
+  delay(1);
+  // radio.openWritingPipe(address[0]);  // мы - труба 0, открываем канал для передачи данных
+  // radio.openWritingPipe(0x314E6F6465); // "1Node" в hex
+  radio.openReadingPipe(1,0x314E6F6465); // "1Node" в hex
+  delay(1);
   radio.setChannel(0x60);             // выбираем канал (в котором нет шумов!)
-
   delay(1);
   radio.setPALevel (RF24_PA_MAX);   // уровень мощности передатчика. На выбор RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
   delay(1);
   radio.setDataRate (RF24_250KBPS); // скорость обмена. На выбор RF24_2MBPS, RF24_1MBPS, RF24_250KBPS
   //должна быть одинакова на приёмнике и передатчике!
-
   delay(1);
   radio.powerUp();        // начать работу
   delay(1);
   radio.startListening(); // начинаем слушать эфир, мы приёмный модуль
+
+  delay(5000);
+
+  // byte pipeNo, gotByte;
+  // while (radio.available(&pipeNo)) {        // слушаем эфир со всех труб
+  //   radio.read(&gotByte, sizeof(gotByte));  // чиатем входящий сигнал
+  //   Serial.print("Recieved: ");
+  //   Serial.println(gotByte);
+  // }
 
   
 }

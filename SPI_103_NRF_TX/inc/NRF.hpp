@@ -67,8 +67,7 @@ public:
     bool available(void);
     bool available(uint8_t* pipe_num);
     uint8_t get_status(void);
-    void openWritingPipe(uint64_t value); 
-    void openReadingPipe(uint8_t child, uint64_t address);
+    void openWritingPipe(uint64_t value); //исправил uint_64 value на char value
     
 
 private:

@@ -58,8 +58,9 @@ public:
   uint8_t getDynamicPayloadSize(void);
   void powerDown(void);
   void openWritingPipe(uint64_t value);
+  void openReadingPipe(uint8_t child, uint64_t address);
   bool read( void* buf, uint8_t len );
-  uint8_t RF24::read_payload(void* buf, uint8_t len);
+  uint8_t read_payload(void* buf, uint8_t len);
   bool available(void);
   bool available(uint8_t* pipe_num);
   uint8_t get_status(void);

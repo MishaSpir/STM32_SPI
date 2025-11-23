@@ -25,7 +25,8 @@ void setup() {
   delay(1);
   radio.setPayloadSize(32);   // размер пакета, в байтах
 
-  radio.openWritingPipe(address[0]);  // мы - труба 0, открываем канал для передачи данных
+  // radio.openWritingPipe(address[0]);  // мы - труба 0, открываем канал для передачи данных
+  radio.openWritingPipe(0x314E6F6465); // "1Node" в hex
   radio.setChannel(0x60);             // выбираем канал (в котором нет шумов!)
 
   delay(1);

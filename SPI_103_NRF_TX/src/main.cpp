@@ -42,7 +42,7 @@ int main() {
 	
 
 	// radio.openWritingPipe(address[0]);  
-	radio.openReadingPipe(1,0x314E6F6465); // "1Node" в hex
+	radio.openWritingPipe(0x314E6F6465); // "1Node" в hex
 	 delay_ms(1);
     radio.setChannel(0x60);             // выбираем канал (в котором нет шумов!)
 
@@ -56,26 +56,25 @@ int main() {
 	delay_ms(1);
   	radio.powerUp();        // начать работу
   	delay_ms(1);
-  	radio.startListening(); // начинаем слушать эфир, мы приёмный модуль
+  	radio.stopListening(); // начинаем слушать эфир, мы приёмный модуль
 
     //   radio.flush_rx();
   	//   radio.flush_tx();
-	delay_ms(5000);
-		
- 	
+	  delay_ms(5000);
+
+	 
 
 		// radio.setChannel(76);
 	
 	// reg_value = radio.read_register(RF_CH);
 
 	while (true) {
-		uint8_t pipeNo, gotByte;
-  		while (radio.available(&pipeNo)) {        // слушаем эфир со всех труб
-    		radio.read(&gotByte, sizeof(gotByte));  // чиатем входящий сигнал
-    		// Serial.print("Recieved: ");
-    		// Serial.println(gotByte);
-		} 
-		
+		gpio_set(GPIOB,GPIO2);
+		delay_ms(1);	
+		gpio_clear(GPIOB,GPIO2);
+		radio.write(&counter, sizeof(counter));
+  		counter++;
+		delay_ms(1000);		
 	}
 }
 

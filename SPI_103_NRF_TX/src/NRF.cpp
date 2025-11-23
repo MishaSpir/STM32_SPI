@@ -710,46 +710,6 @@ void RF24::openWritingPipe(uint64_t value)
 /****************************************************************************/
 
 
-
-void RF24::openReadingPipe(uint8_t child, uint64_t address)
-{
-  // Если это труба 0, кэшируем адрес. Это нужно потому,
-  // что openWritingPipe() перезапишет адрес трубы 0,
-  // поэтому startListening() должен будет восстановить его.
-  if (child == 0)
-    pipe0_reading_address = address;
-
-  if (child <= 5)  // Исправлено с 6 на 5 (трубы от 0 до 5)
-  {
-    // Локальные массивы вместо PROGMEM
-    const uint8_t child_pipe[] = {
-      RX_ADDR_P0, RX_ADDR_P1, RX_ADDR_P2, RX_ADDR_P3, RX_ADDR_P4, RX_ADDR_P5
-    };
-    
-    const uint8_t child_payload_size[] = {
-      RX_PW_P0, RX_PW_P1, RX_PW_P2, RX_PW_P3, RX_PW_P4, RX_PW_P5
-    };
-    
-    const uint8_t child_pipe_enable[] = {
-      ERX_P0, ERX_P1, ERX_P2, ERX_P3, ERX_P4, ERX_P5
-    };
-
-    // Для труб 2-5, записываем только младший байт
-    if (child < 2) {
-      write_register(child_pipe[child], reinterpret_cast<const uint8_t*>(&address), 5);
-    } else {
-      write_register(child_pipe[child], reinterpret_cast<const uint8_t*>(&address), 1);
-    }
-
-    write_register(child_payload_size[child], payload_size);
-
-    // Включаем трубу в регистре EN_RXADDR
-    write_register(EN_RXADDR, (uint8_t)(EN_RXADDR) | _BV(child_pipe_enable[child]));
-  }
-}
-
-/****************************************************************************/
-
 bool RF24::read( void* buf, uint8_t len )
 {
   // Fetch the payload
