@@ -5,6 +5,7 @@
 
 RF24 radio(9, 6); // "создать" модуль на пинах 9 и 6 
 
+uint8_t counter = 9;
 
 uint8_t in_reg;
 uint64_t tube = 0x314E6F6465;
@@ -17,7 +18,12 @@ void setup() {
   pinMode(9,OUTPUT);
   pinMode(6,OUTPUT);
 
-  // radio.begin();  
+  // radio.begin(); 
+  radio.write_register( RF_SETUP, 0x00 ) ;
+	radio.setPALevel( RF24_PA_MAX ) ;
+  radio.read_register(RF_SETUP ) ;
+  
+
   // delay(1);
   // radio.setAutoAck(1);       //0x21 0x3F
   // delay(1);
@@ -51,18 +57,22 @@ void setup() {
   //   Serial.println(gotByte);
   // }
   
-  delay(1000);
+  // delay(1000);
 
  
 }
 
 
 void loop() {
-  delay(10);
-  radio.write_register(RX_ADDR_P0, reinterpret_cast<uint8_t*>(&tube), 5);
+  // delay(10);
+  // radio.write(&counter, sizeof(counter));
+  // counter++;
   // in_reg = (radio.read_register(SETUP_RETR));
   // Serial.println(in_reg,HEX);
-  
+
+  delay(100);
+  radio.setPALevel( RF24_PA_MAX ) ;
+  radio.read_register(RF_SETUP ) ;
 }
 
 

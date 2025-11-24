@@ -108,7 +108,7 @@ uint8_t RF24::write_register(uint8_t reg, const uint8_t* buf, uint8_t len)
   status = SPI.transfer( W_REGISTER | ( REGISTER_MASK & reg ) );
   while ( len-- )
   SPI.transfer(*buf++);
-  
+
   SPI.endTransaction();   
   csn(HIGH);
 
@@ -457,31 +457,7 @@ void RF24::startWrite( const void* buf, uint8_t len )
 
 /****************************************************************************/
 
-uint8_t RF24::write_payload(const void* buf, uint8_t len)
-{
-  uint8_t status;
 
-  const uint8_t* current = reinterpret_cast<const uint8_t*>(buf);
-
-  uint8_t data_len = min(len,payload_size);
-  uint8_t blank_len = dynamic_payloads_enabled ? 0 : payload_size - data_len;
-  
-  //printf("[Writing %u bytes %u blanks]",data_len,blank_len);
-  
-  csn(LOW);
-   SPI.beginTransaction(SPISettings(50000, MSBFIRST, SPI_MODE0)); // начать
-  status = SPI.transfer( W_TX_PAYLOAD );
-  while ( data_len-- )
-    SPI.transfer(*current++);
-  while ( blank_len-- )
-    SPI.transfer(0);
-  SPI.endTransaction();     
-  csn(HIGH);
-
-  return status;
-}
-
-/****************************************************************************/
 void RF24::whatHappened(bool& tx_ok,bool& tx_fail,bool& rx_ready)
 {
   // Read the status & reset the status in one easy call
@@ -599,6 +575,31 @@ bool RF24::read( void* buf, uint8_t len )
 
   // was this the last of the data available?
   return read_register(FIFO_STATUS) & _BV(RX_EMPTY);
+}
+
+/****************************************************************************/
+uint8_t RF24::write_payload(const void* buf, uint8_t len)
+{
+  uint8_t status;
+
+  const uint8_t* current = reinterpret_cast<const uint8_t*>(buf);
+
+  uint8_t data_len = min(len,payload_size);
+  uint8_t blank_len = dynamic_payloads_enabled ? 0 : payload_size - data_len;
+  
+  //printf("[Writing %u bytes %u blanks]",data_len,blank_len);
+  
+  csn(LOW);
+   SPI.beginTransaction(SPISettings(50000, MSBFIRST, SPI_MODE0)); // начать
+  status = SPI.transfer( W_TX_PAYLOAD );
+  while ( data_len-- )
+    SPI.transfer(*current++);
+  while ( blank_len-- )
+    SPI.transfer(0);
+  SPI.endTransaction();     
+  csn(HIGH);
+
+  return status;
 }
 
 /****************************************************************************/
