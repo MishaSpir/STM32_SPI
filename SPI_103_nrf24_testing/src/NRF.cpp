@@ -98,40 +98,42 @@ uint8_t RF24::write_register(uint8_t reg, uint8_t value)
 
 
 
-void RF24::write_register(uint8_t reg, const uint8_t* buf, uint8_t len)
+uint8_t RF24::write_register(uint8_t reg, const uint8_t* buf, uint8_t len)
 {
-  // uint8_t status;
-
+  uint8_t status;
+  
   csn(0);
-  // status = SPI.transfer( W_REGISTER | ( REGISTER_MASK & reg ) );
   spi_send(SPI1, (W_REGISTER | ( REGISTER_MASK & reg )) );
-  while (!(SPI_SR(SPI1) & SPI_SR_TXE)){__asm__("nop");};
+  while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
+
+  status = spi_read(SPI1);
   while ( len-- ){
     // SPI.transfer(*buf++);
     spi_send(SPI1, *buf++ );
     while (!(SPI_SR(SPI1) & SPI_SR_TXE)){__asm__("nop");};
   }
+  while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
   csn(1);
 
-  // return status;
+  return status;
 }
 
 /****************************************************************************/
 
 
-uint16_t RF24::read_register(uint8_t reg) 
+inline uint8_t RF24::read_register(uint8_t reg) 
 {
-    uint16_t result;
+    uint8_t result;
     csn(0);
 
     spi_send(SPI1, R_REGISTER | ( REGISTER_MASK & reg ));
     while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
 
     // отправляем любой бит для получения данных из указанного регистра 
-    spi_send(SPI1, 0x00);
+    spi_send(SPI1, 0xff);
 	  while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
 
-    result = spi_read(SPI1);
+    result = static_cast<uint8_t>(spi_read(SPI1));
     	// ждем, пока освободится шина
 	  while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
     csn(1);

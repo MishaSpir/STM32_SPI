@@ -36,8 +36,8 @@ public:
     void ce(uint8_t level); 
     void begin(void);
     uint8_t write_register(uint8_t reg, uint8_t value);
-    void write_register(uint8_t reg, const uint8_t* buf, uint8_t len);
-    uint16_t read_register(uint8_t reg);
+    uint8_t write_register(uint8_t reg, const uint8_t* buf, uint8_t len);
+    uint8_t read_register(uint8_t reg);
     uint8_t read_register(uint8_t reg, uint8_t* buf, uint8_t len);
     void setPALevel(rf24_pa_dbm_e level);      //устанавливает мощность радиомодуля
     bool setDataRate(rf24_datarate_e speed);   // уставнавивает скорость передачи 
@@ -67,7 +67,8 @@ public:
     bool available(void);
     bool available(uint8_t* pipe_num);
     uint8_t get_status(void);
-    void openWritingPipe(uint64_t value); //исправил uint_64 value на char value
+    void openWritingPipe(uint64_t value); 
+    void openReadingPipe(uint8_t child, uint64_t address);
     
 
 private:

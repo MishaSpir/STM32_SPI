@@ -14,8 +14,8 @@ void clock_setup(void){
 	rcc_clock_setup_pll(&rcc_hsi_configs[RCC_CLOCK_HSI_24MHZ]);
 	rcc_periph_clock_enable(RCC_GPIOB);
 	rcc_periph_clock_enable(RCC_GPIOA);
-
 	rcc_periph_clock_enable(RCC_SPI1);
+	rcc_periph_clock_enable(RCC_USART2);
 }
 
 void gpio_setup(void) {
@@ -51,7 +51,24 @@ void spi1_setup(void){
 	spi_enable(SPI1);
 }
 
+void uart2_setup(void){
+	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART2_TX);
+	gpio_set_mode(GPIOA, GPIO_MODE_INPUT,GPIO_CNF_INPUT_FLOAT, GPIO_USART2_RX);
 
+	/* Setup UART parameters. */
+	usart_set_baudrate(USART2, 9600);
+	usart_set_databits(USART2, 8);
+	usart_set_stopbits(USART2, USART_STOPBITS_1);
+	usart_set_mode(USART2, USART_MODE_TX_RX);
+	usart_set_parity(USART2, USART_PARITY_NONE);
+	usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
+
+	// //активируем перрывания по приёму данных в UART2
+  	// USART_CR1(USART2) |= USART_CR1_RXNEIE; 
+	// nvic_enable_irq(NVIC_USART2_IRQ);
+
+	usart_enable(USART2);
+}
 
 
 

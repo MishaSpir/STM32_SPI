@@ -104,10 +104,12 @@ uint8_t RF24::write_register(uint8_t reg, const uint8_t* buf, uint8_t len)
   uint8_t status;
 
   csn(LOW);
+  SPI.beginTransaction(SPISettings(50000, MSBFIRST, SPI_MODE0)); // начать
   status = SPI.transfer( W_REGISTER | ( REGISTER_MASK & reg ) );
   while ( len-- )
-    SPI.transfer(*buf++);
-
+  SPI.transfer(*buf++);
+  
+  SPI.endTransaction();   
   csn(HIGH);
 
   return status;
