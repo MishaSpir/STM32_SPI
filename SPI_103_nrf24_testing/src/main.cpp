@@ -6,7 +6,7 @@
 
 
 uint8_t counter = 5;
-char address[][6] = {"1Node", "2Node", "3Node", "4Node", "5Node", "6Node"}; //возможные номера труб
+
 
 
 
@@ -59,8 +59,8 @@ int main() {
   	delay_ms(1);
   	radio.startListening(); // начинаем слушать эфир, мы приёмный модуль
 
-    //   radio.flush_rx();
-  	//   radio.flush_tx();
+    // //   radio.flush_rx();
+  	// //   radio.flush_tx();
 	delay_ms(5000);
 		
  	
@@ -68,14 +68,24 @@ int main() {
 		// radio.setChannel(76);
 	
 	// reg_value = radio.read_register(RF_CH);
-
+    // uint8_t status_reg;
 	while (true) {
+        delay_us(50);
 		uint8_t pipeNo, gotByte;
   		while (radio.available(&pipeNo)) {        // слушаем эфир со всех труб
     		radio.read(&gotByte, sizeof(gotByte));  // чиатем входящий сигнал
-    		// Serial.print("Recieved: ");
-    		// Serial.println(gotByte);
+           
+            radio.write_register(STATUS, (1<<RX_DR) | (1<< MAX_RT) | (1<<TX_DS));
+            
+
+            delay_us(10);
+            // status_reg = radio.read_register(STATUS);
+            
+            gotByte+=1;
+            // radio.write_register(STATUS, (1 << RX_DR));
+            usart_send_blocking(USART2,gotByte);
+            
 		} 
-		usart_send_blocking(USART2,gotByte);
+		
 	}
 }

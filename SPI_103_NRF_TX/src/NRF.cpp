@@ -5,7 +5,13 @@
 
 
 /****************************************************************************/
- RF24::RF24(uint16_t _cepin, uint32_t _ceport, uint16_t _cspin,uint32_t _csport){
+ RF24::RF24(uint16_t _cepin, uint32_t _ceport, uint16_t _cspin,uint32_t _csport):
+  wide_band(true),
+  p_variant(false),   
+  payload_size(32),
+  ack_payload_available(false),
+  dynamic_payloads_enabled(false),
+  pipe0_reading_address(0){
     ce_pin = _cepin;
     ce_port = _ceport;
     csn_port = _csport;
@@ -75,22 +81,33 @@ uint8_t RF24::write_register(uint8_t reg, uint8_t value)
    uint8_t status;
 
   csn(0);
+
+  // ВАЖНО: Очищаем RX буфер перед началом операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1); // Читаем и игнорируем старые данные
+    }
+
+  // Шаг 1: Отправляем команду записи
   spi_send(SPI1, (W_REGISTER | ( REGISTER_MASK & reg )) );
   // ждем, пока отправятся данные	(пока бит TXE регистра SPI_SR не установлен)
   while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
+
+  // Шаг 2: Получаем статус регистра
   status = (uint8_t)spi_read(SPI1);
 
+  // Шаг 3: Отправляем значение в регистр
   spi_send(SPI1,value);
   while (!(SPI_SR(SPI1) & SPI_SR_TXE)){__asm__("nop");};
 
+  // Очищаем буфер после операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1);
+    }
+
   // ждем, пока освободится шина
   while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
-  // delay_us(24);
+  
   csn(1);
-
-  //сделать задержку // ждем реакции датчика
-	
-
   return status;
 }
 
@@ -101,18 +118,30 @@ uint8_t RF24::write_register(uint8_t reg, uint8_t value)
 uint8_t RF24::write_register(uint8_t reg, const uint8_t* buf, uint8_t len)
 {
   uint8_t status;
-  // len +=1;
+  
   csn(0);
+    // ВАЖНО: Очищаем RX буфер перед началом операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1); // Читаем и игнорируем старые данные
+    }
+
+
   spi_send(SPI1, (W_REGISTER | ( REGISTER_MASK & reg )) );
   while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
 
-  status = spi_read(SPI1);
+  status = (uint8_t)spi_read(SPI1);
   while ( len-- ){
     // SPI.transfer(*buf++);
     spi_send(SPI1, *buf++ );
     while (!(SPI_SR(SPI1) & SPI_SR_TXE)){__asm__("nop");};
   }
-    // ждем, пока освободится шина
+
+    // Очищаем буфер после операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1);
+    }
+
+
   while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
   csn(1);
 
@@ -122,56 +151,77 @@ uint8_t RF24::write_register(uint8_t reg, const uint8_t* buf, uint8_t len)
 /****************************************************************************/
 
 
-inline uint8_t RF24::read_register(uint8_t reg) 
+uint8_t RF24::read_register(uint8_t reg) 
 {
     uint8_t result;
+    
     csn(0);
-
-    spi_send(SPI1, R_REGISTER | ( REGISTER_MASK & reg ));
+    
+    // ВАЖНО: Очищаем RX буфер перед началом операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1); // Читаем и игнорируем старые данные
+    }
+    
+    // Шаг 1: Отправляем команду чтения
+    spi_send(SPI1, R_REGISTER | (REGISTER_MASK & reg));
     while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
-
-    // отправляем любой бит для получения данных из указанного регистра 
-    spi_send(SPI1, 0xff);
-	  while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
-
-    result = static_cast<uint8_t>(spi_read(SPI1));
-    	// ждем, пока освободится шина
-	  while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
+    (void)spi_read(SPI1); // Читаем и игнорируем статус
+    
+    // Шаг 2: Получаем данные регистра
+    spi_send(SPI1, 0xFF);
+    while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
+    result = (uint8_t) spi_read(SPI1); // Это реальные данные!
+    
+    // Очищаем буфер после операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1);
+    }
+    
+    while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
     csn(1);
-
+    
     return result;
 }
-/****************************************************************************/
 
 
 
 
-uint8_t RF24::read_register(uint8_t reg, uint8_t* buf, uint8_t len)
+uint8_t RF24::read_register(uint8_t reg, uint8_t* buf, uint8_t len)// не уверен насчет read_spi в цикле
 {
   uint8_t status;
 
   csn(0);
-  
-  // status = SPI.transfer( R_REGISTER | ( REGISTER_MASK & reg ) );
-  // while ( len-- )
-  //   *buf++ = SPI.transfer(0xff);
-  // SPI.endTransaction();   
-
+  // ВАЖНО: Очищаем RX буфер перед началом операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1); // Читаем и игнорируем старые данные
+    }
 
   spi_send(SPI1, R_REGISTER | ( REGISTER_MASK & reg ));
     while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
     status   = (uint8_t) spi_read(SPI1);
     // ждем, пока освободится шина
-	  while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
+	  // while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
 
   while ( len-- ){
-    // отправляем любой бит для получения данных из указанного регистра 
-    spi_send(SPI1, 0x00);
+    // Очищаем перед каждым новым байтом
+        while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+            (void)spi_read(SPI1);
+        }
+
+    spi_send(SPI1, 0xff);
 	  while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
     *buf++   = (uint8_t)spi_read(SPI1);
     // ждем, пока освободится шина
-	  while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
+	  // while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
   }
+
+
+  // Финальная очистка
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1);
+    }
+
+  while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
   csn(1);
 
   return status;
@@ -497,38 +547,46 @@ uint8_t RF24::read_payload(void* buf, uint8_t len)
   uint8_t data_len = std::min(len,payload_size);
   uint8_t blank_len = dynamic_payloads_enabled ? 0 : payload_size - data_len;
   
-  //printf("[Reading %u bytes %u blanks]",data_len,blank_len);
-  
   csn(0);
-  // SPI.beginTransaction(SPISettings(50000, MSBFIRST, SPI_MODE0)); // начать
-  // status = SPI.transfer( R_RX_PAYLOAD );
-  // while ( data_len-- )
-  //   *current++ = SPI.transfer(0xff);
-  // while ( blank_len-- )
-  //   SPI.transfer(0xff);
-  // SPI.endTransaction();    
+  // ВАЖНО: Очищаем RX буфер перед началом операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1); // Читаем и игнорируем старые данные
+    }
 
-
+  // Отправляем команду чтения payload и читаем статус
   spi_send(SPI1, R_RX_PAYLOAD);
   while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
   status   = (uint8_t) spi_read(SPI1);
-    // ждем, пока освободится шина
-	while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
+
 
   while ( data_len-- ){
-    // отправляем любой бит для получения данных из указанного регистра 
-    spi_send(SPI1, 0x00);
-	  while (!(SPI_SR(SPI1) & SPI_SR_RXNE));
+     // ВАЖНО: // Очищаем RX буфер перед каждым новым байтом
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1); // Читаем и игнорируем старые данные
+    }
+
+    // Читаем "пустые" байты если нужно (для фиксированного размера payload)
+    spi_send(SPI1, 0xFF);
+	  while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
     *current++   = (uint8_t)spi_read(SPI1);
-    	// ждем, пока освободится шина
-	  while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
+    
   }
+
+  while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
 
   while ( blank_len-- ){
     spi_send(SPI1, 0xff);
 	  while (!(SPI_SR(SPI1) & SPI_SR_TXE)){__asm__("nop");};
   }
 
+  // ВАЖНО: Очищаем RX буфер в конце операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1); // Читаем и игнорируем старые данные
+    }
+
+
+	while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
+  csn(1);
   return status;
 }
 
@@ -593,7 +651,7 @@ bool RF24::write( const void* buf, uint8_t len )
   // Yay, we are done.
 
   // Power down
-  powerDown();
+  // powerDown();
 
   // Flush buffers (Is this a relic of past experimentation, and not needed anymore??)
   flush_tx();
@@ -621,10 +679,28 @@ uint8_t RF24::getDynamicPayloadSize(void)
   uint8_t result = 0;
 
   csn(0);
+  // ВАЖНО: Очищаем RX буфер перед началом операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1); // Читаем и игнорируем старые данные
+    }
+  
   spi_send(SPI1, R_RX_PL_WID);
   while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
+  (void)spi_read(SPI1); // Читаем и ИГНОРИРУЕМ статус!  
+
+
+  spi_send(SPI1, 0xff);
+  while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
   result   = (uint8_t) spi_read(SPI1);
-    // ждем, пока освободится шина
+    
+
+   // Очищаем буфер и ждем завершения
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1); // Читаем и игнорируем старые данные
+    }
+    
+    
+  // ждем, пока освободится шина
 	while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
   csn(1);
 
@@ -662,6 +738,13 @@ bool RF24::available(uint8_t* pipe_num)
     // actually READ the payload?
 
     write_register(STATUS,_BV(RX_DR) );
+    // Также очищаем другие флаги если нужно
+        if (status & (1 << TX_DS)) {
+            write_register(STATUS, (1 << TX_DS));
+        }
+        if (status & (1 << MAX_RT)) {
+            write_register(STATUS, (1 << MAX_RT));
+        }
 
     // Handle ack payload receipt
     if ( status & _BV(TX_DS) )
@@ -681,11 +764,23 @@ uint8_t RF24::get_status(void)
   uint8_t status;
 
   csn(0);
-
+  // ВАЖНО: Очищаем RX буфер перед началом операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1); // Читаем и игнорируем старые данные
+    }
+  
   spi_send(SPI1, NOP);
     while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
     status   = (uint8_t) spi_read(SPI1);
     // ждем, пока освободится шина
+
+
+  // ВАЖНО: Очищаем RX буфер после операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1); // Читаем и игнорируем старые данные
+    }
+    
+    
 	  while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
 
  
@@ -757,6 +852,8 @@ bool RF24::read( void* buf, uint8_t len )
 {
   // Fetch the payload
   read_payload( buf, len );
+
+  write_register(STATUS, (1<<RX_DR) | (1<< MAX_RT) | (1<<TX_DS));
 
   // was this the last of the data available?
   return read_register(FIFO_STATUS) & _BV(RX_EMPTY);

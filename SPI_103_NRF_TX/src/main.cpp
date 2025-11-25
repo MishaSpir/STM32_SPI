@@ -6,7 +6,7 @@
 
 
 uint8_t counter = 8;
-char address[][6] = {"1Node", "2Node", "3Node", "4Node", "5Node", "6Node"}; //возможные номера труб
+
 
 
 
@@ -56,7 +56,7 @@ int main() {
 	delay_ms(1);
   	radio.powerUp();        // начать работу
   	delay_ms(1);
-  	radio.stopListening(); // начинаем слушать эфир, мы приёмный модуль
+  	radio.stopListening(); 
 
     //   radio.flush_rx();
   	//   radio.flush_tx();
@@ -73,6 +73,7 @@ int main() {
 		delay_ms(1);	
 		gpio_clear(GPIOB,GPIO2);
 		radio.write(&counter, sizeof(counter));
+		// radio.write_register(STATUS, (1<<RX_DR) | (1<< MAX_RT) | (1<<TX_DS));
   		counter++;
 		delay_ms(1000);		
 	}

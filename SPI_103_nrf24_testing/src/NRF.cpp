@@ -5,7 +5,13 @@
 
 
 /****************************************************************************/
- RF24::RF24(uint16_t _cepin, uint32_t _ceport, uint16_t _cspin,uint32_t _csport){
+ RF24::RF24(uint16_t _cepin, uint32_t _ceport, uint16_t _cspin,uint32_t _csport):
+  wide_band(true),
+  p_variant(false),   
+  payload_size(32),
+  ack_payload_available(false),
+  dynamic_payloads_enabled(false),
+  pipe0_reading_address(0){
     ce_pin = _cepin;
     ce_port = _ceport;
     csn_port = _csport;
@@ -732,6 +738,13 @@ bool RF24::available(uint8_t* pipe_num)
     // actually READ the payload?
 
     write_register(STATUS,_BV(RX_DR) );
+    // Также очищаем другие флаги если нужно
+        if (status & (1 << TX_DS)) {
+            write_register(STATUS, (1 << TX_DS));
+        }
+        if (status & (1 << MAX_RT)) {
+            write_register(STATUS, (1 << MAX_RT));
+        }
 
     // Handle ack payload receipt
     if ( status & _BV(TX_DS) )
@@ -839,6 +852,8 @@ bool RF24::read( void* buf, uint8_t len )
 {
   // Fetch the payload
   read_payload( buf, len );
+
+  write_register(STATUS, (1<<RX_DR) | (1<< MAX_RT) | (1<<TX_DS));
 
   // was this the last of the data available?
   return read_register(FIFO_STATUS) & _BV(RX_EMPTY);

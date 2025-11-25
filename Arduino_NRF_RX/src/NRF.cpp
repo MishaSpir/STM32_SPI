@@ -2,7 +2,9 @@
 
 /****************************************************************************/
 
-RF24::RF24(uint8_t _cepin, uint8_t _cspin){
+RF24::RF24(uint8_t _cepin, uint8_t _cspin):wide_band(true), p_variant(false), 
+  payload_size(32), ack_payload_available(false), dynamic_payloads_enabled(false),
+  pipe0_reading_address(0){
   ce_pin = _cepin;
 
   csn_pin = _cspin;
@@ -431,7 +433,7 @@ bool RF24::write( const void* buf, uint8_t len )
   // Yay, we are done.
 
   // Power down
-  powerDown();
+  // powerDown();
 
   // Flush buffers (Is this a relic of past experimentation, and not needed anymore??)
   flush_tx();
@@ -573,6 +575,7 @@ bool RF24::read( void* buf, uint8_t len )
   // Fetch the payload
   read_payload( buf, len );
 
+  write_register(STATUS, (1<<RX_DR) | (1<< MAX_RT) | (1<<TX_DS));
   // was this the last of the data available?
   return read_register(FIFO_STATUS) & _BV(RX_EMPTY);
 }
@@ -598,6 +601,8 @@ uint8_t RF24::write_payload(const void* buf, uint8_t len)
     SPI.transfer(0);
   SPI.endTransaction();     
   csn(HIGH);
+
+  write_register(STATUS, (1<<RX_DR) | (1<< MAX_RT) | (1<<TX_DS));
 
   return status;
 }
