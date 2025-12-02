@@ -1,0 +1,70 @@
+# Артефакты языков C и C++
+
+# Зависимости
+*.d
+
+# Объектные модули
+*.o
+*.ko
+*.obj
+*.elf
+
+# Результаты работы компоновщика
+*.ilk
+*.map
+*.exp
+
+# Прекомпилированные заголовочные файлы
+*.gch
+*.pch
+
+# Статическиеи библиотеки
+*.lib
+*.a
+*.la
+*.lo
+
+# Динамические библиотеки
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Исполняемые файлы
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.elf
+*.hex
+*.bin
+
+# Файлы, используемые для отладки
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+
+# Артефакты CMake
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+
+# Артефакты проектов
+*build*/
+*bld*/
+.vscode/
+.idea/
+cmake-build-debug/
+CMakeLists.txt.user

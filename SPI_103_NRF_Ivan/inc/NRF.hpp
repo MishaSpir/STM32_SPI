@@ -1,13 +1,14 @@
 #ifndef NRF_HPP
 #define NRF_HPP
 
+#define HIGH 1
+#define LOW  0
+
 # include <libopencm3/stm32/rcc.h> 
 # include <libopencm3/stm32/gpio.h> 
 
 #include <inttypes.h> //для uint8_t
 #include "../inc/setup.hpp"
-#include "../inc/R24_config.h"
-#include "../inc/nrf24l01.h"
 
 
 typedef enum {RF24_PA_MIN = 0, // Мин мощность,ток - 7,5 мА
@@ -29,30 +30,44 @@ typedef enum {
               } rf24_crclength_e;
 
 
-class RF24 {
+class NRF24 {
 public:
-    RF24(uint16_t _cepin, uint32_t _ceport, uint16_t _cspin,uint32_t _csport);
-    void csn(uint8_t mode);
-    void ce(uint8_t level); 
-    void begin(void);
+    NRF24(uint16_t _cepin, uint32_t _ceport, uint16_t _cspin,uint32_t _csport);
+    void csn(int mode);
+    void ce(int level); 
+    void send_SPI (uint8_t data);
+    uint8_t read_SPI ();
+    uint8_t Transfer_SPI(uint8_t data);
+    void enableDynamicPayloads(void);
+    void writeAckPayload(uint8_t pipe, const void* buf, uint8_t len);
+    bool isAckPayloadAvailable(void);
+    bool isPVariant(void);
+    void setAutoAck( uint8_t pipe, bool enable );
+    bool testRPD(void);
+    bool testCarrier(void);
+    rf24_pa_dbm_e getPALevel(void);
+    rf24_datarate_e getDataRate( void );
+    rf24_crclength_e getCRCLength(void);
+    bool begin(void);
     uint8_t write_register(uint8_t reg, uint8_t value);
     uint8_t write_register(uint8_t reg, const uint8_t* buf, uint8_t len);
     uint8_t read_register(uint8_t reg);
     uint8_t read_register(uint8_t reg, uint8_t* buf, uint8_t len);
     void setPALevel(rf24_pa_dbm_e level);      //устанавливает мощность радиомодуля
     bool setDataRate(rf24_datarate_e speed);   // уставнавивает скорость передачи 
-    void setCRCLength(rf24_crclength_e length);// уставнавивает длинну CRC Суммы
-    void setChannel(uint8_t channel);
-    void flush_rx(void);
-    void flush_tx(void);
+    bool setCRCLength(rf24_crclength_e length);// уставнавивает длинну CRC Суммы
+    bool setChannel(uint8_t channel);
+    uint8_t flush_rx(void);
+    uint8_t flush_tx(void);
 
     // функции, в которых может быть ошибка - Миша,проверь!!
     void setAutoAck(bool enable);
-    void setAutoAck( uint8_t pipe, bool enable );
+    // void setAutoAck( uint8_t pipe, bool enable );
     void setRetries(uint8_t delay, uint8_t count);
     void enableAckPayload(void);
     void toggle_features(void);
     void setPayloadSize(uint8_t size);
+    uint8_t getPayloadSize(void);
     void powerUp(void);
     void powerDown(void);
     void stopListening(void);

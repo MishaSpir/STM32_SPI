@@ -197,7 +197,8 @@ uint8_t RF24::read_register(uint8_t reg, uint8_t* buf, uint8_t len)// не ув�
     }
 
   spi_send(SPI1, R_REGISTER | ( REGISTER_MASK & reg ));
-    while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
+  while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
+  
     status   = (uint8_t) spi_read(SPI1);
     // ждем, пока освободится шина
 	  // while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
@@ -374,12 +375,27 @@ void RF24::setAutoAck(bool enable)
   if ( enable )
     write_register(EN_AA, 0b111111);
   else
-    write_register(EN_AA, 0);
+    write_register(EN_AA, 0x00);
 }
 
 /****************************************************************************/
-
-
+void RF24::setAutoAck( uint8_t pipe, bool enable )
+{
+  if ( pipe <= 6 )
+  {
+    uint8_t en_aa = read_register( EN_AA ) ;
+    if( enable )
+    {
+      en_aa |= _BV(pipe) ;
+    }
+    else
+    {
+      en_aa &= ~_BV(pipe) ;
+    }
+    write_register( EN_AA, en_aa ) ;
+  }
+}
+/****************************************************************************/
 void RF24::setRetries(uint8_t delay, uint8_t count)
 {
  write_register(SETUP_RETR,(delay&0xf)<<ARD | (count&0xf)<<ARC);
@@ -458,6 +474,7 @@ void RF24::stopListening(void)
 {
   ce(0);
   flush_tx();
+  // delay_us(100);
   flush_rx();
 }
 
@@ -489,9 +506,19 @@ void RF24::startListening(void)
 
 void RF24::startWrite( const void* buf, uint8_t len )
 {
+
+  // powerUp();
+  delay_us(1500); // Увеличьте задержку до 1.5ms
   // Transmitter power-up
-  write_register(CONFIG, (uint8_t)( read_register(CONFIG) | _BV(PWR_UP) ) & ~_BV(PRIM_RX) );
-  delay_us(150);
+
+
+  
+ // Переход в режим передачи
+    write_register(CONFIG, (read_register(CONFIG) | _BV(PWR_UP)) & ~_BV(PRIM_RX));
+    delay_us(150);
+    
+    // Очистка перед записью
+    // flush_tx();
 
   // Send the payload
   write_payload( buf, len );
@@ -504,9 +531,9 @@ void RF24::startWrite( const void* buf, uint8_t len )
  
 /****************************************************************************/
 
-void RF24::write_payload(const void* buf, uint8_t len)
+uint8_t RF24::write_payload(const void* buf, uint8_t len)
 {
-  // uint8_t status;
+  uint8_t status;
 
   const uint8_t* current = reinterpret_cast<const uint8_t*>(buf);
 
@@ -517,24 +544,47 @@ void RF24::write_payload(const void* buf, uint8_t len)
   
   csn(0);
  
+  // ВАЖНО: Очищаем RX буфер перед началом операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1); // Читаем и игнорируем старые данные
+    }
+
+  // Шаг 1: Отправляем команду записи
+  spi_send(SPI1, W_TX_PAYLOAD );
+
+  while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
+
+  // Шаг 2: Получаем статус регистра
+  status = (uint8_t)spi_read(SPI1);
 
   while ( data_len-- ){
     // SPI.transfer(*current++);
     spi_send(SPI1, *current++ );
     while (!(SPI_SR(SPI1) & SPI_SR_TXE)){__asm__("nop");};
   }
+
+  // while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
+
   while ( blank_len-- ){
     // SPI.transfer(0);
-    spi_send(SPI1,0 );
+    spi_send(SPI1,0x00 );
     while (!(SPI_SR(SPI1) & SPI_SR_TXE)){__asm__("nop");};
   }
-  // SPI.endTransaction();   
-  // ждем, пока освободится шина
+  
+ 
+
+   // Очищаем буфер после операции
+    while (SPI_SR(SPI1) & SPI_SR_RXNE) {
+        (void)spi_read(SPI1);
+    }
+
+
+
   while (SPI_SR(SPI1) & SPI_SR_BSY){__asm__("nop");};
   // delay_us(24);
   csn(1);
 
-  // return status;
+  return status;
 }
 
 /****************************************************************************/
@@ -555,6 +605,7 @@ uint8_t RF24::read_payload(void* buf, uint8_t len)
 
   // Отправляем команду чтения payload и читаем статус
   spi_send(SPI1, R_RX_PAYLOAD);
+
   while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
   status   = (uint8_t) spi_read(SPI1);
 
@@ -576,7 +627,7 @@ uint8_t RF24::read_payload(void* buf, uint8_t len)
 
   while ( blank_len-- ){
     spi_send(SPI1, 0xff);
-	  while (!(SPI_SR(SPI1) & SPI_SR_TXE)){__asm__("nop");};
+	  while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
   }
 
   // ВАЖНО: Очищаем RX буфер в конце операции
@@ -596,11 +647,23 @@ uint8_t RF24::read_payload(void* buf, uint8_t len)
 
 bool RF24::write( const void* buf, uint8_t len )
 {
+write_register(STATUS,_BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT) );
+    //   // СБРОС ПЕРЕД КАЖДОЙ ПЕРЕДАЧЕЙ
+    // ce(0);
+    // flush_tx();
+    // powerDown();
+    // write_register(STATUS, _BV(MAX_RT) | _BV(TX_DS) | _BV(RX_DR));
+    // delay_us(100);
+    // powerUp();
+    // ce(1);
+
+
+
   bool result = false;
 
   // Begin the write
   startWrite(buf,len);
-
+write_register(STATUS,_BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT) );
   // ------------
   // At this point we could return from a non-blocking write, and then call
   // the rest after an interrupt
@@ -626,7 +689,7 @@ bool RF24::write( const void* buf, uint8_t len )
   // The part above is what you could recreate with your own interrupt handler,
   // and then call this when you got an interrupt
   // ------------
-
+write_register(STATUS,_BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT) );
   // Call this when you get an interrupt
   // The status tells us three things
   // * The send was successful (TX_DS)
@@ -634,7 +697,7 @@ bool RF24::write( const void* buf, uint8_t len )
   // * There is an ack packet waiting (RX_DR)
   bool tx_ok, tx_fail;
   whatHappened(tx_ok,tx_fail,ack_payload_available);
-  
+  write_register(STATUS,_BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT) );
   //printf("%u%u%u\r\n",tx_ok,tx_fail,ack_payload_available);
 
   result = tx_ok;
@@ -647,7 +710,7 @@ bool RF24::write( const void* buf, uint8_t len )
     // IF_SERIAL_DEBUG(Serial.print("[AckPacket]/"));
     // IF_SERIAL_DEBUG(Serial.println(ack_payload_length,DEC));
   }
-
+write_register(STATUS,_BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT) );
   // Yay, we are done.
 
   // Power down
@@ -655,7 +718,7 @@ bool RF24::write( const void* buf, uint8_t len )
 
   // Flush buffers (Is this a relic of past experimentation, and not needed anymore??)
   flush_tx();
-
+ write_register(STATUS,_BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT) );
   return result;
 }
 /****************************************************************************/
@@ -689,7 +752,7 @@ uint8_t RF24::getDynamicPayloadSize(void)
   (void)spi_read(SPI1); // Читаем и ИГНОРИРУЕМ статус!  
 
 
-  spi_send(SPI1, 0xff);
+  spi_send(SPI1, 0xFF);
   while (!(SPI_SR(SPI1) & SPI_SR_RXNE)){__asm__("nop");};
   result   = (uint8_t) spi_read(SPI1);
     
@@ -739,12 +802,7 @@ bool RF24::available(uint8_t* pipe_num)
 
     write_register(STATUS,_BV(RX_DR) );
     // Также очищаем другие флаги если нужно
-        if (status & (1 << TX_DS)) {
-            write_register(STATUS, (1 << TX_DS));
-        }
-        if (status & (1 << MAX_RT)) {
-            write_register(STATUS, (1 << MAX_RT));
-        }
+       
 
     // Handle ack payload receipt
     if ( status & _BV(TX_DS) )
@@ -807,19 +865,7 @@ void RF24::openWritingPipe(uint64_t value)
 
 /****************************************************************************/
 
-
-
-void RF24::openReadingPipe(uint8_t child, uint64_t address)
-{
-  // Если это труба 0, кэшируем адрес. Это нужно потому,
-  // что openWritingPipe() перезапишет адрес трубы 0,
-  // поэтому startListening() должен будет восстановить его.
-  if (child == 0)
-    pipe0_reading_address = address;
-
-  if (child <= 5)  // Исправлено с 6 на 5 (трубы от 0 до 5)
-  {
-    // Локальные массивы вместо PROGMEM
+ // Локальные массивы вместо PROGMEM
     const uint8_t child_pipe[] = {
       RX_ADDR_P0, RX_ADDR_P1, RX_ADDR_P2, RX_ADDR_P3, RX_ADDR_P4, RX_ADDR_P5
     };
@@ -832,6 +878,17 @@ void RF24::openReadingPipe(uint8_t child, uint64_t address)
       ERX_P0, ERX_P1, ERX_P2, ERX_P3, ERX_P4, ERX_P5
     };
 
+
+void RF24::openReadingPipe(uint8_t child, uint64_t address)
+{
+  // Если это труба 0, кэшируем адрес. Это нужно потому,
+  // что openWritingPipe() перезапишет адрес трубы 0,
+  // поэтому startListening() должен будет восстановить его.
+  if (child == 0)
+    pipe0_reading_address = address;
+
+  if (child <= 6)  // Исправлено с 6 на 5 (трубы от 0 до 5)
+  {
     // Для труб 2-5, записываем только младший байт
     if (child < 2) {
       write_register(child_pipe[child], reinterpret_cast<const uint8_t*>(&address), 5);
@@ -859,4 +916,9 @@ bool RF24::read( void* buf, uint8_t len )
   return read_register(FIFO_STATUS) & _BV(RX_EMPTY);
 }
 
-/****************************************************************************/
+/****************************************************************************/\
+void RF24::disableCRC( void )
+{
+  uint8_t disable = read_register(CONFIG) & ~_BV(EN_CRC) ;
+  write_register( CONFIG, disable ) ;
+}

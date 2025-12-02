@@ -58,8 +58,9 @@ public:
   uint8_t getDynamicPayloadSize(void);
   void powerDown(void);
   void openWritingPipe(uint64_t value);
+  void openReadingPipe(uint8_t child, uint64_t address);
   bool read( void* buf, uint8_t len );
-  uint8_t RF24::read_payload(void* buf, uint8_t len);
+  uint8_t read_payload(void* buf, uint8_t len);
   bool available(void);
   bool available(uint8_t* pipe_num);
   uint8_t get_status(void);
@@ -75,8 +76,8 @@ private:
   bool wide_band; /* 2Mbs data rate in use? */
   bool p_variant; /* False for RF24L01 and true for RF24L01P */
   uint8_t payload_size; /**< Fixed size of payloads */
-  bool dynamic_payloads_enabled; /**< Whether dynamic payloads are enabled. */ 
   bool ack_payload_available; /**< Whether there is an ack payload waiting */
+  bool dynamic_payloads_enabled; /**< Whether dynamic payloads are enabled. */ 
   uint8_t ack_payload_length; /**< Dynamic size of pending ack payload. */
   uint64_t pipe0_reading_address; /**< Last address set on pipe 0 for reading. */
 };

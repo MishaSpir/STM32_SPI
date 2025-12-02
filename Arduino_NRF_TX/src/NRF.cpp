@@ -2,7 +2,9 @@
 
 /****************************************************************************/
 
-RF24::RF24(uint8_t _cepin, uint8_t _cspin){
+RF24::RF24(uint8_t _cepin, uint8_t _cspin):wide_band(true), p_variant(false), 
+  payload_size(32), ack_payload_available(false), dynamic_payloads_enabled(false),
+  pipe0_reading_address(0){
   ce_pin = _cepin;
 
   csn_pin = _cspin;
@@ -104,10 +106,12 @@ uint8_t RF24::write_register(uint8_t reg, const uint8_t* buf, uint8_t len)
   uint8_t status;
 
   csn(LOW);
+  SPI.beginTransaction(SPISettings(50000, MSBFIRST, SPI_MODE0)); // начать
   status = SPI.transfer( W_REGISTER | ( REGISTER_MASK & reg ) );
   while ( len-- )
-    SPI.transfer(*buf++);
+  SPI.transfer(*buf++);
 
+  SPI.endTransaction();   
   csn(HIGH);
 
   return status;
@@ -429,7 +433,7 @@ bool RF24::write( const void* buf, uint8_t len )
   // Yay, we are done.
 
   // Power down
-  powerDown();
+  // powerDown();
 
   // Flush buffers (Is this a relic of past experimentation, and not needed anymore??)
   flush_tx();
@@ -455,31 +459,7 @@ void RF24::startWrite( const void* buf, uint8_t len )
 
 /****************************************************************************/
 
-uint8_t RF24::write_payload(const void* buf, uint8_t len)
-{
-  uint8_t status;
 
-  const uint8_t* current = reinterpret_cast<const uint8_t*>(buf);
-
-  uint8_t data_len = min(len,payload_size);
-  uint8_t blank_len = dynamic_payloads_enabled ? 0 : payload_size - data_len;
-  
-  //printf("[Writing %u bytes %u blanks]",data_len,blank_len);
-  
-  csn(LOW);
-   SPI.beginTransaction(SPISettings(50000, MSBFIRST, SPI_MODE0)); // начать
-  status = SPI.transfer( W_TX_PAYLOAD );
-  while ( data_len-- )
-    SPI.transfer(*current++);
-  while ( blank_len-- )
-    SPI.transfer(0);
-  SPI.endTransaction();     
-  csn(HIGH);
-
-  return status;
-}
-
-/****************************************************************************/
 void RF24::whatHappened(bool& tx_ok,bool& tx_fail,bool& rx_ready)
 {
   // Read the status & reset the status in one easy call
@@ -526,6 +506,46 @@ void RF24::openWritingPipe(uint64_t value)
 
 /****************************************************************************/
 
+void RF24::openReadingPipe(uint8_t child, uint64_t address)
+{
+  // Если это труба 0, кэшируем адрес. Это нужно потому,
+  // что openWritingPipe() перезапишет адрес трубы 0,
+  // поэтому startListening() должен будет восстановить его.
+  if (child == 0)
+    pipe0_reading_address = address;
+
+  if (child <= 5)  // Исправлено с 6 на 5 (трубы от 0 до 5)
+  {
+    // Локальные массивы вместо PROGMEM
+    const uint8_t child_pipe[] = {
+      RX_ADDR_P0, RX_ADDR_P1, RX_ADDR_P2, RX_ADDR_P3, RX_ADDR_P4, RX_ADDR_P5
+    };
+    
+    const uint8_t child_payload_size[] = {
+      RX_PW_P0, RX_PW_P1, RX_PW_P2, RX_PW_P3, RX_PW_P4, RX_PW_P5
+    };
+    
+    const uint8_t child_pipe_enable[] = {
+      ERX_P0, ERX_P1, ERX_P2, ERX_P3, ERX_P4, ERX_P5
+    };
+
+    // Для труб 2-5, записываем только младший байт
+    if (child < 2) {
+      write_register(child_pipe[child], reinterpret_cast<const uint8_t*>(&address), 5);
+    } else {
+      write_register(child_pipe[child], reinterpret_cast<const uint8_t*>(&address), 1);
+    }
+
+    write_register(child_payload_size[child], payload_size);
+
+    // Включаем трубу в регистре EN_RXADDR
+    write_register(EN_RXADDR, read_register(EN_RXADDR) | _BV(child_pipe_enable[child]));
+  }
+}
+
+/****************************************************************************/
+
+
 
 void RF24::startListening(void)
 {
@@ -555,8 +575,36 @@ bool RF24::read( void* buf, uint8_t len )
   // Fetch the payload
   read_payload( buf, len );
 
+  write_register(STATUS, (1<<RX_DR) | (1<< MAX_RT) | (1<<TX_DS));
   // was this the last of the data available?
   return read_register(FIFO_STATUS) & _BV(RX_EMPTY);
+}
+
+/****************************************************************************/
+uint8_t RF24::write_payload(const void* buf, uint8_t len)
+{
+  uint8_t status;
+
+  const uint8_t* current = reinterpret_cast<const uint8_t*>(buf);
+
+  uint8_t data_len = min(len,payload_size);
+  uint8_t blank_len = dynamic_payloads_enabled ? 0 : payload_size - data_len;
+  
+  //printf("[Writing %u bytes %u blanks]",data_len,blank_len);
+  
+  csn(LOW);
+   SPI.beginTransaction(SPISettings(50000, MSBFIRST, SPI_MODE0)); // начать
+  status = SPI.transfer( W_TX_PAYLOAD );
+  while ( data_len-- )
+    SPI.transfer(*current++);
+  while ( blank_len-- )
+    SPI.transfer(0);
+  SPI.endTransaction();     
+  csn(HIGH);
+
+  write_register(STATUS, (1<<RX_DR) | (1<< MAX_RT) | (1<<TX_DS));
+
+  return status;
 }
 
 /****************************************************************************/

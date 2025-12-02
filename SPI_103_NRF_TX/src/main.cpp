@@ -5,7 +5,7 @@
 // # include <libopencm3/cm3/nvic.h>
 
 
-uint8_t counter = 8;
+uint8_t counter = 9;
 
 
 
@@ -34,7 +34,7 @@ int main() {
 	 delay_ms(1);
   	radio.setAutoAck(1);       //0x21 0x3F
   	 delay_ms(1);
- 	radio.setRetries(0, 15);   //0x24 0x0F
+ 	radio.setRetries(3, 5);   //0x24 0x0F
  	 delay_ms(1);
   	radio.enableAckPayload();  //0x1D_0x00  0x3D_0x06 0x1D_0x00 0x1C_0xFF 0x3C_0x03  
 	 delay_ms(1);
@@ -44,7 +44,7 @@ int main() {
 	// radio.openWritingPipe(address[0]);  
 	radio.openWritingPipe(0x314E6F6465); // "1Node" в hex
 	 delay_ms(1);
-    radio.setChannel(0x60);             // выбираем канал (в котором нет шумов!)
+    radio.setChannel(0x70);             // выбираем канал (в котором нет шумов!)
 
 	delay_ms(1);
   	radio.setPALevel (RF24_PA_MAX);   // уровень мощности передатчика. На выбор RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
@@ -72,10 +72,18 @@ int main() {
 		gpio_set(GPIOB,GPIO2);
 		delay_ms(1);	
 		gpio_clear(GPIOB,GPIO2);
+		// radio.powerUp();  
+		// radio.write_register(STATUS,_BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT) );
+		// delay_ms(10);
 		radio.write(&counter, sizeof(counter));
-		// radio.write_register(STATUS, (1<<RX_DR) | (1<< MAX_RT) | (1<<TX_DS));
-  		counter++;
-		delay_ms(1000);		
+  		// counter++;
+
+
+		//   bool tx_ok, tx_fail,ack_payload_available;
+		// radio.whatHappened(tx_ok,tx_fail,ack_payload_available);
+
+		delay_ms(1000);	
+	
 	}
 }
 

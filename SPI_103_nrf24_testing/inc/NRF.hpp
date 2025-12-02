@@ -58,7 +58,7 @@ public:
     void stopListening(void);
     void startListening(void);
     void startWrite( const void* buf, uint8_t len );
-    void write_payload(const void* buf, uint8_t len);
+    uint8_t write_payload(const void* buf, uint8_t len);
     uint8_t read_payload(void* buf, uint8_t len);
     bool write( const void* buf, uint8_t len );
     bool read( void* buf, uint8_t len );
@@ -69,6 +69,7 @@ public:
     uint8_t get_status(void);
     void openWritingPipe(uint64_t value); 
     void openReadingPipe(uint8_t child, uint64_t address);
+    void disableCRC( void );
     
 
 private:

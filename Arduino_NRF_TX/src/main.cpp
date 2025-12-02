@@ -2,8 +2,8 @@
 #include <SPI.h>    
 
 
-byte counter = 8;
-byte address[][6] = {"1Node", "2Node", "3Node", "4Node", "5Node", "6Node"}; //возможные номера труб
+byte counter = 7;
+
 
 RF24 radio(9, 6); // "создать" модуль на пинах 9 и 6 
 
@@ -39,8 +39,8 @@ void setup() {
   radio.powerUp();        // начать работу
   delay(1);
   radio.stopListening();  // не слушаем радиоэфир, мы передатчик
-
-  
+  delay(1000);
+  radio.write(&counter, sizeof(counter));
 }
 
 void loop() {
@@ -49,10 +49,15 @@ void loop() {
   Serial.println(counter);
   radio.write(&counter, sizeof(counter));
   counter++;
-  delay(2000);
+
+  //   radio.write_register(STATUS, (1<<RX_DR) | (1<< MAX_RT) | (1<<TX_DS));
+  // radio.read_register(STATUS);
+
+    // bool tx_ok, tx_fail,ack_payload_available;
+		// radio.whatHappened(tx_ok,tx_fail,ack_payload_available);
+  delay(100);
 
 }
-
 
 
 
